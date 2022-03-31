@@ -1,0 +1,4 @@
+dgg-bot
+websocket-client
+schedule
+requests

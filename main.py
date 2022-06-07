@@ -41,7 +41,7 @@ def check_emotes():
 
 
 def is_admin(msg: Message):
-    return msg.nick in ("RightToBearArmsLOL", "Cake", "tena_")
+    return msg.nick in ("RightToBearArmsLOL", "Cake", "tena")
 
 
 @repeat(every().day.at("00:00"))

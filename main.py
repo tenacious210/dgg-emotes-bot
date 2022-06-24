@@ -19,9 +19,17 @@ def generate_link(data: str):
     if data.count(" ") >= 1:
         requested_link = [i for i in data.split(" ") if i][1]
         if requested_link in emotes:
-            link += f"?emote={requested_link}"
+            link_ending = f"?emote={requested_link}"
         else:
-            link += f"?user={requested_link}"
+            link_ending = f"?user={requested_link}"
+        if top3 := requests.get(
+            f"https://tena.dev/api/emotes{link_ending}&amount=3"
+        ).json():
+            if link_ending.startswith("?emote"):
+                opener = f"Top 3 {requested_link} posters: {' '.join([n for n in top3.keys()])}"
+            else:
+                opener = f"Top 3 emotes: {' '.join([e for e in top3.keys()])}"
+            link = f"{opener} {link}{link_ending}"
     return link
 
 

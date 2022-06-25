@@ -38,7 +38,7 @@ def end_cooldown(key):
 
 
 def start_cooldown(key):
-    cooldown[key] = Timer(cooldown[len], end_cooldown, [key])
+    cooldown[key] = Timer(cooldown["len"], end_cooldown, [key])
     cooldown[key].start()
 
 

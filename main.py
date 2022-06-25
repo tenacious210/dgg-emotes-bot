@@ -38,7 +38,7 @@ def end_cooldown(key):
 
 
 def start_cooldown(key):
-    cooldown[key] = Timer(15, end_cooldown, [key])
+    cooldown[key] = Timer(cooldown[len], end_cooldown, [key])
     cooldown[key].start()
 
 
@@ -83,7 +83,9 @@ def emotecd_command(msg: Message):
             msg.reply("Amount must be an integer")
             return
         cooldown["len"] = length
-        msg.reply(f"Set cooldown to {length}s")
+        reply = f"Set cooldown to {length}s"
+        emotes_bot.last_message = reply
+        msg.reply(reply)
 
 
 if __name__ == "__main__":

@@ -49,7 +49,7 @@ def check_emotes():
 
 
 def is_admin(msg: Message):
-    return msg.nick in ("RightToBearArmsLOL", "Cake", "tena")
+    return msg.nick in ("RightToBearArmsLOL", "Cake", "tena", "Destiny")
 
 
 @repeat(every().day.at("00:00"))
@@ -60,7 +60,7 @@ def update_emotes():
     print("Updated emotes")
 
 
-@emotes_bot.command(["emotes"])
+@emotes_bot.command(["emotes", "emote"])
 def emotes_command(msg: Message):
     if isinstance(msg, PrivateMessage) or not cooldown["emotes"]:
         reply = generate_link(msg.data)
@@ -80,12 +80,15 @@ def emotecd_command(msg: Message):
         try:
             length = abs(int(length))
         except ValueError:
-            msg.reply("Amount must be an integer")
+            emotes_bot.last_message = reply = "Amount must be an integer"
+            msg.reply(reply)
             return
         cooldown["len"] = length
         reply = f"Set cooldown to {length}s"
-        emotes_bot.last_message = reply
-        msg.reply(reply)
+    else:
+        reply = f"Cooldown is currently {cooldown['len']}s"
+    emotes_bot.last_message = reply
+    msg.reply(reply)
 
 
 if __name__ == "__main__":

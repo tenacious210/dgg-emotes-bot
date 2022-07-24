@@ -30,6 +30,10 @@ def generate_link(data: str):
             else:
                 opener = f"Top 3 emotes: {' '.join([e for e in top3.keys()])}"
             link = f"{opener} {link}{link_ending}"
+    else:
+        top3 = requests.get("https://tena.dev/api/emotes?amount=3").json()
+        top3 = " ".join([e for e in top3.keys()])
+        link = f"Top 3 posted: {top3} {link}"
     return link
 
 

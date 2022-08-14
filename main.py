@@ -15,26 +15,28 @@ emotes_bot.last_message = ""
 
 
 def generate_link(data: str):
-    link = "tena.dev/emotes"
     if data.count(" ") >= 1:
         requested_link = [i for i in data.split(" ") if i][1]
         if requested_link in emotes:
-            link_ending = f"?emote={requested_link}"
-        else:
-            link_ending = f"?user={requested_link}"
-        if top3 := requests.get(
-            f"https://tena.dev/api/emotes{link_ending}&amount=3"
-        ).json():
-            if link_ending.startswith("?emote"):
-                opener = f"Top 3 {requested_link} posters: {' '.join([n for n in top3.keys()])}"
+            link = f"tena.dev/emotes?emote={requested_link}"
+            top3 = requests.get(
+                f"https://tena.dev/api/emotes?emote={requested_link}&amount=3"
+            ).json()
+            response = f"Top 3 {requested_link} posters: {' '.join([n for n in top3.keys()])} {link}"
+        elif requests.get(f"https://tena.dev/api/users/{requested_link}").json():
+            link = f"tena.dev/users/{requested_link}"
+            if top3 := requests.get(
+                f"https://tena.dev/api/emotes?user={requested_link}&amount=3"
+            ).json():
+                response = f"Top 3 emotes: {' '.join(e for e in top3.keys())} {link}"
             else:
-                opener = f"Top 3 emotes: {' '.join([e for e in top3.keys()])}"
-            link = f"{opener} {link}{link_ending}"
+                response = link
     else:
+        link = "tena.dev/emotes"
         top3 = requests.get("https://tena.dev/api/emotes?amount=3").json()
         top3 = " ".join([e for e in top3.keys()])
-        link = f"Top 3 posted: {top3} {link}"
-    return link
+        response = f"Top 3 posted: {top3} {link}"
+    return response
 
 
 def end_cooldown(key):

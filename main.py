@@ -19,6 +19,7 @@ emotes_bot.last_message = ""
 
 
 def generate_link(data: str):
+    response = "tena.dev/emotes"
     if data.count(" ") >= 1:
         requested_link = [i for i in data.split(" ") if i][1]
         if requested_link in emotes:

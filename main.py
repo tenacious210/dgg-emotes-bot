@@ -112,7 +112,7 @@ def blacklist_command(msg: Message):
     global blacklist
     if msg.data.count(" ") >= 2:
         arguments = [i for i in msg.data.split(" ") if i]
-        mode, user = arguments[1:2]
+        mode, user = arguments[1:3]
         if mode == "add" and user not in blacklist:
             blacklist.append(user)
             reply = f"Added {user} to blacklist"

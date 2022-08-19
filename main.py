@@ -62,6 +62,10 @@ def is_admin(msg: Message):
     return msg.nick in ("RightToBearArmsLOL", "Cake", "tena", "Destiny")
 
 
+def not_blacklisted(msg: Message):
+    return msg.nick not in blacklist
+
+
 @repeat(every().day.at("00:00"))
 def update_emotes():
     global emotes
@@ -71,6 +75,7 @@ def update_emotes():
 
 
 @emotes_bot.command(["emotes", "emote"])
+@emotes_bot.check(not_blacklisted)
 def emotes_command(msg: Message):
     if isinstance(msg, PrivateMessage) or not cooldown["emotes"]:
         reply = generate_link(msg.data)

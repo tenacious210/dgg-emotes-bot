@@ -7,7 +7,7 @@ import requests
 import json
 
 with open("blacklist.json", "r") as blacklist_json:
-    blacklist = json.loads(blacklist_json)
+    blacklist = json.loads(blacklist_json.read())
 
 emotes = [
     e["prefix"]

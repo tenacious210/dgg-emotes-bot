@@ -4,6 +4,10 @@ from threading import Thread, Timer
 from time import sleep
 from os import getenv
 import requests
+import json
+
+with open("blacklist.json", "r") as blacklist_json:
+    blacklist = json.loads(blacklist_json)
 
 emotes = [
     e["prefix"]
@@ -93,6 +97,27 @@ def emotecd_command(msg: Message):
         reply = f"Set cooldown to {length}s"
     else:
         reply = f"Cooldown is currently {cooldown['len']}s"
+    emotes_bot.last_message = reply
+    msg.reply(reply)
+
+
+@emotes_bot.command(["blacklist"])
+@emotes_bot.check(is_admin)
+def blacklist_command(msg: Message):
+    global blacklist
+    if msg.data.count(" ") >= 2:
+        arguments = [i for i in msg.data.split(" ") if i]
+        mode, user = arguments[1:2]
+        if mode == "add" and user not in blacklist:
+            blacklist.append(user)
+            reply = f"Added {user} to blacklist"
+        elif mode == "remove" and user in blacklist:
+            blacklist.remove(user)
+            reply = f"Removed {user} from blacklist"
+        else:
+            reply = "Invalid user"
+    with open("blacklist.json", "w") as blacklist_json:
+        blacklist_json.write(json.dumps(blacklist))
     emotes_bot.last_message = reply
     msg.reply(reply)
 

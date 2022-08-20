@@ -122,6 +122,8 @@ def blacklist_command(msg: Message):
             reply = f"Removed {user} from blacklist"
         else:
             reply = "Invalid user"
+    else:
+        reply = f"Blacklisted users: {' '.join(blacklist)}"
     with open("blacklist.json", "w") as blacklist_json:
         blacklist_json.write(json.dumps(blacklist))
     emotes_bot.last_message = reply

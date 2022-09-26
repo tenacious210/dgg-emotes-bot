@@ -1,6 +1,5 @@
-from schedule import every, repeat, run_pending
 from dggbot import DGGBot, Message, PrivateMessage
-from threading import Thread, Timer
+from threading import Timer
 from time import sleep
 from os import getenv
 import requests
@@ -9,38 +8,48 @@ import json
 with open("blacklist.json", "r") as blacklist_json:
     blacklist = json.loads(blacklist_json.read())
 
-emotes = [
-    e["prefix"]
-    for e in requests.get("https://cdn.destiny.gg/emotes/emotes.json").json()
-]
-cooldown = {"len": 15, "emotes": False}
+
+cooldown = {"len": 30, "emotes": False}
 emotes_bot = DGGBot(getenv("DGG_AUTH"), username="Emotes")
 emotes_bot.last_message = ""
 
 
-def generate_link(data: str):
-    response = "tena.dev/emotes"
-    if data.count(" ") >= 1:
-        requested_link = [i for i in data.split(" ") if i][1]
-        if requested_link in emotes:
-            link = f"tena.dev/emotes?emote={requested_link}"
-            top3 = requests.get(
-                f"https://tena.dev/api/emotes?emote={requested_link}&amount=3"
-            ).json()
-            response = f"Top 3 {requested_link} posters: {' '.join([n for n in top3.keys()])} {link}"
-        elif requests.get(f"https://tena.dev/api/users/{requested_link}").json():
-            link = f"tena.dev/users/{requested_link}"
-            if top3 := requests.get(
-                f"https://tena.dev/api/emotes?user={requested_link}&amount=3"
-            ).json():
-                response = f"Top 3 emotes: {' '.join(e for e in top3.keys())} {link}"
+def generate_link(msg_data: str, msg_author: str):
+    def user_response(user):
+        response = None
+        api_link = f"https://tena.dev/api/users/{user}"
+        if user_stats := requests.get(api_link).json():
+            link = f"tena.dev/users/{user}"
+            if "emotes" in user_stats.keys():
+                emotes = list(user_stats["emotes"].keys())[:3]
+                response = f"Top 3 emotes: {' '.join(e for e in emotes)} {link}"
             else:
-                response = link
-    else:
-        link = "tena.dev/emotes"
-        top3 = requests.get("https://tena.dev/api/emotes?amount=3").json()
-        top3 = " ".join([e for e in top3.keys()])
-        response = f"Top 3 posted: {top3} {link}"
+                response = f"Level {user_stats['level']} chatter: {link}"
+        return response
+
+    def emote_response(emote):
+        response = None
+        emotes_api_link = "https://tena.dev/api/emotes"
+        emotes = requests.get(emotes_api_link).json().keys()
+        if emote in emotes:
+            link = f"tena.dev/emotes/{emote}"
+            api_link = f"https://tena.dev/api/emotes/{emote}?amount=3"
+            top3 = requests.get(api_link).json()
+            response = (
+                f"Top 3 {emote} posters: {' '.join([n for n in top3.keys()])} {link}"
+            )
+        return response
+
+    response = None
+    if msg_data.count(" ") >= 1:
+        requested_link = [i for i in msg_data.split(" ") if i][1]
+        if arg_is_emote := emote_response(requested_link):
+            response = arg_is_emote
+        elif arg_is_user := user_response(requested_link):
+            response = arg_is_user
+    if not response:
+        author_in_db = user_response(msg_author)
+        response = author_in_db if author_in_db else "No stats exist for your username"
     return response
 
 
@@ -53,12 +62,6 @@ def start_cooldown(key):
     cooldown[key].start()
 
 
-def check_emotes():
-    while True:
-        run_pending()
-        sleep(60)
-
-
 def is_admin(msg: Message):
     return msg.nick in ("RightToBearArmsLOL", "Cake", "tena", "Destiny")
 
@@ -67,19 +70,11 @@ def not_blacklisted(msg: Message):
     return msg.nick not in blacklist
 
 
-@repeat(every().day.at("00:00"))
-def update_emotes():
-    global emotes
-    emote_json = requests.get("https://cdn.destiny.gg/emotes/emotes.json").json()
-    emotes = [e["prefix"] for e in emote_json]
-    print("Updated emotes")
-
-
 @emotes_bot.command(["emotes", "emote"])
 @emotes_bot.check(not_blacklisted)
 def emotes_command(msg: Message):
     if isinstance(msg, PrivateMessage) or not cooldown["emotes"]:
-        reply = generate_link(msg.data)
+        reply = generate_link(msg.data, msg.nick)
         if not isinstance(msg, PrivateMessage):
             if emotes_bot.last_message == reply:
                 reply += " ."
@@ -131,8 +126,6 @@ def blacklist_command(msg: Message):
 
 
 if __name__ == "__main__":
-    check_emotes_thread = Thread(target=check_emotes, daemon=True)
-    check_emotes_thread.start()
     print("Connecting to DGG")
     while True:
         emotes_bot.run()

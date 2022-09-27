@@ -20,7 +20,7 @@ def generate_link(msg_data: str, msg_author: str):
         api_link = f"https://tena.dev/api/users/{user}"
         if user_stats := requests.get(api_link).json():
             link = f"tena.dev/users/{user}"
-            if "emotes" in user_stats.keys():
+            if user_stats["emotes"]:
                 emotes = list(user_stats["emotes"].keys())[:3]
                 response = f"Top 3 emotes: {' '.join(e for e in emotes)} {link}"
             else:

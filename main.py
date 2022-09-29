@@ -73,7 +73,7 @@ def not_blacklisted(msg: Message):
 @emotes_bot.command(["emotes", "emote"])
 @emotes_bot.check(not_blacklisted)
 def emotes_command(msg: Message):
-    if isinstance(msg, PrivateMessage) or not cooldown["emotes"]:
+    if is_admin(msg) or isinstance(msg, PrivateMessage) or not cooldown["emotes"]:
         reply = generate_link(msg.data, msg.nick)
         if not isinstance(msg, PrivateMessage):
             if emotes_bot.last_message == reply:

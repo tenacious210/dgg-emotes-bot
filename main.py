@@ -1,17 +1,34 @@
-from dggbot import DGGBot, Message, PrivateMessage
-from threading import Timer
-from time import sleep
-from os import getenv
-import requests
 import json
+import logging
+import asyncio
+from threading import Timer
 
-with open("blacklist.json", "r") as blacklist_json:
-    blacklist = json.loads(blacklist_json.read())
+from dggbot import DGGBot, Message, PrivateMessage
+import requests
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO)
+
+with open("config.json", "r") as config_json:
+    config = json.loads(config_json.read())
 
 
 cooldown = {"len": 30, "emotes": False}
-emotes_bot = DGGBot(getenv("DGG_AUTH"), username="Emotes")
+emotes_bot = DGGBot(config["dgg_auth"], username="Emotes")
+emotes_bot.auth = config["dgg_auth"]
 emotes_bot.last_message = ""
+emotes_bot.blacklist = config["blacklist"]
+emotes_bot.admins = config["admins"]
+
+
+def save_config():
+    to_json = {
+        "dgg_auth": emotes_bot.auth,
+        "admins": emotes_bot.admins,
+        "blacklist": emotes_bot.blacklist,
+    }
+    with open("config.json", "w") as config_json:
+        config_json.write(json.dumps(to_json, indent=2))
 
 
 def generate_link(msg_data: str, msg_author: str):
@@ -63,11 +80,11 @@ def start_cooldown(key):
 
 
 def is_admin(msg: Message):
-    return msg.nick in ("RightToBearArmsLOL", "Cake", "tena", "Destiny")
+    return msg.nick in emotes_bot.admins
 
 
 def not_blacklisted(msg: Message):
-    return msg.nick not in blacklist
+    return msg.nick not in emotes_bot.blacklist
 
 
 @emotes_bot.command(["emotes", "emote"])
@@ -105,28 +122,46 @@ def emotecd_command(msg: Message):
 @emotes_bot.command(["blacklist"])
 @emotes_bot.check(is_admin)
 def blacklist_command(msg: Message):
-    global blacklist
     if msg.data.count(" ") >= 2:
         arguments = [i for i in msg.data.split(" ") if i]
         mode, user = arguments[1:3]
-        if mode == "add" and user not in blacklist:
-            blacklist.append(user)
+        if mode == "add" and user not in emotes_bot.blacklist:
+            emotes_bot.blacklist.append(user)
             reply = f"Added {user} to blacklist"
-        elif mode == "remove" and user in blacklist:
-            blacklist.remove(user)
+        elif mode == "remove" and user in emotes_bot.blacklist:
+            emotes_bot.blacklist.remove(user)
             reply = f"Removed {user} from blacklist"
         else:
             reply = "Invalid user"
     else:
-        reply = f"Blacklisted users: {' '.join(blacklist)}"
-    with open("blacklist.json", "w") as blacklist_json:
-        blacklist_json.write(json.dumps(blacklist))
+        reply = f"Blacklisted users: {' '.join(emotes_bot.blacklist)}"
+    save_config()
+    emotes_bot.last_message = reply
+    msg.reply(reply)
+
+
+@emotes_bot.command(["admin"])
+@emotes_bot.check(is_admin)
+def admin_command(msg: Message):
+    if msg.data.count(" ") >= 2:
+        arguments = [i for i in msg.data.split(" ") if i]
+        mode, user = arguments[1:3]
+        if mode == "add" and user not in emotes_bot.admins:
+            emotes_bot.admins.append(user)
+            reply = f"Added {user} to admins"
+        elif mode == "remove" and user in emotes_bot.admins:
+            emotes_bot.admins.remove(user)
+            reply = f"Removed {user} from admins"
+        else:
+            reply = "Invalid user"
+    else:
+        reply = f"Admin users: {' '.join(emotes_bot.blacklist)}"
+    save_config()
     emotes_bot.last_message = reply
     msg.reply(reply)
 
 
 if __name__ == "__main__":
-    print("Connecting to DGG")
+    logger.info("Starting emotes bot")
     while True:
         emotes_bot.run()
-        sleep(5)

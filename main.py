@@ -155,7 +155,7 @@ def admin_command(msg: Message):
         else:
             reply = "Invalid user"
     else:
-        reply = f"Admin users: {' '.join(emotes_bot.blacklist)}"
+        reply = f"Admin users: {' '.join(emotes_bot.admins)}"
     save_config()
     emotes_bot.last_message = reply
     msg.reply(reply)

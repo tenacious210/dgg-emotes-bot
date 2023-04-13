@@ -1,3 +1,2 @@
 dgg-bot
-websocket-client
 requests

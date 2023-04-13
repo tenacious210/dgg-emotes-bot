@@ -1,34 +1,23 @@
 import json
 import logging
-import asyncio
-from threading import Timer
+from typing import Union
 
-from dggbot import DGGBot, Message, PrivateMessage
+from dggbot import DGGBot, Message
 import requests
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
 with open("config.json", "r") as config_json:
-    config = json.loads(config_json.read())
+    cfg: dict[str, Union[str, list]] = json.loads(config_json.read())
+
+emotes_bot = DGGBot(cfg["dgg_auth"])
+emotes_bot._avoid_dupe = True
 
 
-cooldown = {"len": 30, "emotes": False}
-emotes_bot = DGGBot(config["dgg_auth"], username="Emotes")
-emotes_bot.auth = config["dgg_auth"]
-emotes_bot.last_message = ""
-emotes_bot.blacklist = config["blacklist"]
-emotes_bot.admins = config["admins"]
-
-
-def save_config():
-    to_json = {
-        "dgg_auth": emotes_bot.auth,
-        "admins": emotes_bot.admins,
-        "blacklist": emotes_bot.blacklist,
-    }
+def save_cfg():
     with open("config.json", "w") as config_json:
-        config_json.write(json.dumps(to_json, indent=2))
+        config_json.write(json.dumps(cfg, indent=2))
 
 
 def generate_link(msg_data: str, msg_author: str):
@@ -70,94 +59,48 @@ def generate_link(msg_data: str, msg_author: str):
     return response
 
 
-def end_cooldown(key):
-    cooldown[key] = False
-
-
-def start_cooldown(key):
-    cooldown[key] = Timer(cooldown["len"], end_cooldown, [key])
-    cooldown[key].start()
-
-
 def is_admin(msg: Message):
-    return msg.nick in emotes_bot.admins
+    return msg.nick in cfg["admins"]
 
 
 def not_blacklisted(msg: Message):
-    return msg.nick not in emotes_bot.blacklist
+    return msg.nick not in cfg["blacklist"]
 
 
-@emotes_bot.command(["emotes", "emote"])
+@emotes_bot.command(["emotes", "emote"], cooldown=20)
 @emotes_bot.check(not_blacklisted)
 def emotes_command(msg: Message):
-    if is_admin(msg) or isinstance(msg, PrivateMessage) or not cooldown["emotes"]:
-        reply = generate_link(msg.data, msg.nick)
-        if not isinstance(msg, PrivateMessage):
-            if emotes_bot.last_message == reply:
-                reply += " ."
-            emotes_bot.last_message = reply
-            start_cooldown("emotes")
-        msg.reply(reply)
-
-
-@emotes_bot.command(["emotecd"])
-@emotes_bot.check(is_admin)
-def emotecd_command(msg: Message):
-    if msg.data.count(" ") >= 1:
-        length = [i for i in msg.data.split(" ") if i][1]
-        try:
-            length = abs(int(length))
-        except ValueError:
-            emotes_bot.last_message = reply = "Amount must be an integer"
-            msg.reply(reply)
-            return
-        cooldown["len"] = length
-        reply = f"Set cooldown to {length}s"
-    else:
-        reply = f"Cooldown is currently {cooldown['len']}s"
-    emotes_bot.last_message = reply
+    reply = generate_link(msg.data, msg.nick)
     msg.reply(reply)
 
 
-@emotes_bot.command(["blacklist"])
 @emotes_bot.check(is_admin)
-def blacklist_command(msg: Message):
-    if msg.data.count(" ") >= 2:
-        arguments = [i for i in msg.data.split(" ") if i]
-        mode, user = arguments[1:3]
-        if mode == "add" and user not in emotes_bot.blacklist:
-            emotes_bot.blacklist.append(user)
-            reply = f"Added {user} to blacklist"
-        elif mode == "remove" and user in emotes_bot.blacklist:
-            emotes_bot.blacklist.remove(user)
-            reply = f"Removed {user} from blacklist"
-        else:
-            reply = "Invalid user"
+@emotes_bot.command()
+def blacklist(msg: Message, mode: str, user: str, *_):
+    if mode == "add" and user not in cfg["blacklist"]:
+        cfg["blacklist"].append(user)
+        reply = f"Added {user} to blacklist"
+    elif mode == "remove" and user in cfg["blacklist"]:
+        cfg["blacklist"].remove(user)
+        reply = f"Removed {user} from blacklist"
     else:
-        reply = f"Blacklisted users: {' '.join(emotes_bot.blacklist)}"
-    save_config()
-    emotes_bot.last_message = reply
+        reply = "Invalid user"
+    save_cfg()
     msg.reply(reply)
 
 
-@emotes_bot.command(["admin"])
 @emotes_bot.check(is_admin)
-def admin_command(msg: Message):
-    if msg.data.count(" ") >= 2:
-        arguments = [i for i in msg.data.split(" ") if i]
-        mode, user = arguments[1:3]
-        if mode == "add" and user not in emotes_bot.admins:
-            emotes_bot.admins.append(user)
-            reply = f"Added {user} to admins"
-        elif mode == "remove" and user in emotes_bot.admins:
-            emotes_bot.admins.remove(user)
-            reply = f"Removed {user} from admins"
-        else:
-            reply = "Invalid user"
+@emotes_bot.command()
+def admin(msg: Message, mode: str, user: str, *_):
+    if mode == "add" and user not in cfg["admins"]:
+        cfg["admins"].append(user)
+        reply = f"Added {user} to admins"
+    elif mode == "remove" and user in cfg["admins"]:
+        cfg["admins"].remove(user)
+        reply = f"Removed {user} from admins"
     else:
-        reply = f"Admin users: {' '.join(emotes_bot.admins)}"
-    save_config()
-    emotes_bot.last_message = reply
+        reply = "Invalid user"
+    save_cfg()
     msg.reply(reply)
 
 

@@ -27,7 +27,11 @@ def generate_link(msg_data: str, msg_author: str):
         if user_stats := requests.get(api_link).json():
             link = f"tena.dev/users/{user}"
             if user_stats["emotes"]:
-                emotes = list(user_stats["emotes"].keys())[:3]
+                emotes = sorted(
+                    list(user_stats["emotes"].keys()),
+                    key=lambda e: user_stats["emotes"][e],
+                    reverse=True,
+                )[:3]
                 response = f"Top 3 emotes: {' '.join(e for e in emotes)} {link}"
             else:
                 response = f"Level {user_stats['level']} chatter: {link}"

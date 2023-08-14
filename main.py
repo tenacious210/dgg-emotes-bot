@@ -44,10 +44,13 @@ def generate_link(msg_data: str, msg_author: str):
         if emote in emotes:
             link = f"tena.dev/emotes/{emote}"
             api_link = f"https://tena.dev/api/emotes/{emote}?amount=3"
-            top3 = requests.get(api_link).json()
-            response = (
-                f"Top 3 {emote} posters: {' '.join([n for n in top3.keys()])} {link}"
-            )
+            posters = requests.get(api_link).json()
+            top3 = sorted(
+                list(posters.keys()),
+                key=lambda n: posters[n],
+                reverse=True,
+            )[:3]
+            response = f"Top 3 {emote} posters: {' '.join([n for n in top3])} {link}"
         return response
 
     response = None

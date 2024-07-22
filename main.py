@@ -8,7 +8,7 @@ import requests
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
-with open("config.json", "r") as config_json:
+with open("config/config.json", "r") as config_json:
     cfg: dict[str, Union[str, list]] = json.loads(config_json.read())
 
 emotes_bot = DGGBot(cfg["dgg_auth"])
@@ -16,7 +16,7 @@ emotes_bot._avoid_dupe = True
 
 
 def save_cfg():
-    with open("config.json", "w") as config_json:
+    with open("config/config.json", "w") as config_json:
         config_json.write(json.dumps(cfg, indent=2))
 
 
@@ -74,7 +74,7 @@ def not_blacklisted(msg: Message):
     return msg.nick not in cfg["blacklist"]
 
 
-@emotes_bot.command(["emotes", "emote"], cooldown=20)
+@emotes_bot.command(["emotes", "emote", "obamna"], cooldown=20)
 @emotes_bot.check(not_blacklisted)
 def emotes_command(msg: Message):
     reply = generate_link(msg.data, msg.nick)
@@ -113,5 +113,4 @@ def admin(msg: Message, mode: str, user: str, *_):
 
 if __name__ == "__main__":
     logger.info("Starting emotes bot")
-    while True:
-        emotes_bot.run()
+    emotes_bot.run_forever()

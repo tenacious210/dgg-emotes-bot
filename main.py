@@ -1,3 +1,4 @@
+import sys
 import json
 import logging
 from typing import Union
@@ -5,8 +6,10 @@ from typing import Union
 from dggbot import DGGBot, Message
 import requests
 
-logger = logging.getLogger(__name__)
+sys.tracebacklimit = 0
 logging.basicConfig(level=logging.INFO)
+logging.getLogger("websocket").disabled = True
+logging.getLogger("dgg-bot").disabled = True
 
 with open("config/config.json", "r") as config_json:
     cfg: dict[str, Union[str, list]] = json.loads(config_json.read())
@@ -78,7 +81,10 @@ def not_blacklisted(msg: Message):
 @emotes_bot.check(not_blacklisted)
 def emotes_command(msg: Message):
     reply = generate_link(msg.data, msg.nick)
-    msg.reply(reply)
+    try:
+        msg.reply(reply)
+    except Exception as e:
+        logging.error(e)
 
 
 @emotes_bot.check(is_admin)
@@ -93,6 +99,7 @@ def blacklist(msg: Message, mode: str, user: str, *_):
     else:
         reply = "Invalid user"
     save_cfg()
+    logging.info(reply)
     msg.reply(reply)
 
 
@@ -108,9 +115,10 @@ def admin(msg: Message, mode: str, user: str, *_):
     else:
         reply = "Invalid user"
     save_cfg()
+    logging.info(reply)
     msg.reply(reply)
 
 
 if __name__ == "__main__":
-    logger.info("Starting emotes bot")
+    logging.info("Starting emotes bot")
     emotes_bot.run_forever()
